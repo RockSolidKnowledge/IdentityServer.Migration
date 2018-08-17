@@ -5,7 +5,11 @@ VisualStudioVersion = 15.0.27703.2042
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0D1F4DC5-FF90-4A1A-A774-6D36797D4F98}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rsk.IdentityServer.Migration", "src\Rsk.IdentityServer.Migration\Rsk.IdentityServer.Migration.csproj", "{B1E0C4DA-D1D1-4396-95B2-382788DDF1C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rsk.IdentityServer.Migration", "src\Rsk.IdentityServer.Migration\Rsk.IdentityServer.Migration.csproj", "{B1E0C4DA-D1D1-4396-95B2-382788DDF1C2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8A54C92D-EAB4-4290-8F27-3FDCCBEA46C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rsk.IdentityServer.Migration.Tests", "test\Rsk.IdentityServer.Migration.Tests\Rsk.IdentityServer.Migration.Tests.csproj", "{CCE7BCA7-93D3-4872-9A3F-F9FFC34B697C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,12 +21,17 @@ Global
 		{B1E0C4DA-D1D1-4396-95B2-382788DDF1C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1E0C4DA-D1D1-4396-95B2-382788DDF1C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1E0C4DA-D1D1-4396-95B2-382788DDF1C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCE7BCA7-93D3-4872-9A3F-F9FFC34B697C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCE7BCA7-93D3-4872-9A3F-F9FFC34B697C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCE7BCA7-93D3-4872-9A3F-F9FFC34B697C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCE7BCA7-93D3-4872-9A3F-F9FFC34B697C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B1E0C4DA-D1D1-4396-95B2-382788DDF1C2} = {0D1F4DC5-FF90-4A1A-A774-6D36797D4F98}
+		{CCE7BCA7-93D3-4872-9A3F-F9FFC34B697C} = {8A54C92D-EAB4-4290-8F27-3FDCCBEA46C0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B52F38FC-1BB2-4424-8E14-EBC0E50E6EE3}

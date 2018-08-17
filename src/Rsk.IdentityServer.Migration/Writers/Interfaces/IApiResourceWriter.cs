@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using IdentityServer4.Models;
 
-namespace Rsk.IdentityServer.Migration.Writers.Interfaces
+namespace Rsk.IdentityServer.Migration.Writers
 {
     public interface IApiResourceWriter
     {

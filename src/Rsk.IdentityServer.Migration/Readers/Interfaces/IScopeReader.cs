@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using IdentityServer3.Core.Models;
 
-namespace Rsk.IdentityServer.Migration.Readers.Interfaces
+namespace Rsk.IdentityServer.Migration.Readers
 {
     public interface IScopeReader
     {

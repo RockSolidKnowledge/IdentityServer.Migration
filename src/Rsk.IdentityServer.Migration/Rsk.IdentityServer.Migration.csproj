@@ -10,6 +10,7 @@
     <PackageReference Include="IdentityServer3.EntityFramework" Version="2.6.0" />
     <PackageReference Include="IdentityServer4" Version="2.2.0" />
     <PackageReference Include="IdentityServer4.EntityFramework" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
   </ItemGroup>
 
 </Project>

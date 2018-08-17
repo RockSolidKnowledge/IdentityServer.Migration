@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using IdentityServer3.Core.Models;
 using IdentityServer4.Models;
 
@@ -6,7 +7,10 @@ namespace Rsk.IdentityServer.Migration.Mappers
 {
     public static class IdentityResourceMappers
     {
-        public static IdentityResource ToVersion4(this IdentityServer3.Core.Models.Scope scope)
+        public static List<IdentityResource> GetIdentityResources(this IEnumerable<IdentityServer3.Core.Models.Scope> scopes) =>
+            scopes.Where(x => x.Type == ScopeType.Identity).Select(x => x.ToVersion4()).ToList();
+
+        private static IdentityResource ToVersion4(this IdentityServer3.Core.Models.Scope scope)
         {
             if (scope == null) return null;
             if (scope.Type != ScopeType.Identity) return null;
