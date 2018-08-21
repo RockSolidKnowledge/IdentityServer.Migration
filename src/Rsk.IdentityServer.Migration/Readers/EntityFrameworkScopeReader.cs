@@ -21,7 +21,7 @@ namespace Rsk.IdentityServer.Migration.Readers
 
         public async Task<IList<Scope>> Read()
         {
-            using (var context = new ScopeConfigurationDbContext(options.IdentityServer3ConnectionString))
+            using (var context = new ScopeConfigurationDbContext(options.IdentityServer3ScopesConnectionString))
             {
                 var scopes = await context.Scopes.ToListAsync();
                 return scopes.Select(EntitiesMap.ToModel).ToList();

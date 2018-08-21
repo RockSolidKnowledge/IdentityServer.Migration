@@ -21,7 +21,7 @@ namespace Rsk.IdentityServer.Migration.Readers
 
         public async Task<IList<Client>> Read()
         {
-            using (var context = new ClientConfigurationDbContext(options.IdentityServer3ConnectionString))
+            using (var context = new ClientConfigurationDbContext(options.IdentityServer3ClientsConnectionString))
             {
                 var clients = await context.Clients.ToListAsync();
                 return clients.Select(EntitiesMap.ToModel).ToList();

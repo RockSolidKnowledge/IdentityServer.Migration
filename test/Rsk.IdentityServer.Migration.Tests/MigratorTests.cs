@@ -19,8 +19,14 @@ namespace Rsk.IdentityServer.Migration.Tests
 {
     public class MigratorTests : IDisposable
     {
-        private const string ConnectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test;Integrated Security=SSPI;";
-        private readonly DbOptions options = new DbOptions {IdentityServer3ConnectionString = ConnectionString};
+        private const string ClientsConnectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.clients;Integrated Security=SSPI;";
+        private const string ScopesConnectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.scopes;Integrated Security=SSPI;";
+        private readonly DbOptions options = new DbOptions
+        {
+            IdentityServer3ClientsConnectionString = ClientsConnectionString,
+            IdentityServer3ScopesConnectionString = ScopesConnectionString
+        };
+
         private readonly DbContextOptions<ConfigurationDbContext> dbContextOptions = new DbContextOptionsBuilder<ConfigurationDbContext>()
             .UseInMemoryDatabase("IdentityServer")
             .Options;
@@ -101,14 +107,15 @@ namespace Rsk.IdentityServer.Migration.Tests
         public MigratorTests()
         {
             System.Data.Entity.Database.SetInitializer(new System.Data.Entity.CreateDatabaseIfNotExists<ClientConfigurationDbContext>());
+            System.Data.Entity.Database.SetInitializer(new System.Data.Entity.CreateDatabaseIfNotExists<ScopeConfigurationDbContext>());
 
-            using (var context = new ClientConfigurationDbContext(ConnectionString))
+            using (var context = new ClientConfigurationDbContext(ClientsConnectionString))
             {
                 context.Clients.Add(testClient.ToEntity());
                 context.SaveChanges();
             }
 
-            using (var context = new ScopeConfigurationDbContext(ConnectionString))
+            using (var context = new ScopeConfigurationDbContext(ScopesConnectionString))
             {
                 context.Scopes.Add(resourceScope.ToEntity());
                 context.Scopes.Add(identityScope.ToEntity());
@@ -240,22 +247,62 @@ namespace Rsk.IdentityServer.Migration.Tests
             foreach (var scopeClaim in resourceScope.Claims)
                 migratedResource.UserClaims.Should().Contain(x => x == scopeClaim.Name);
 
-            foreach (var testClientSecret in testClient.ClientSecrets)
+            foreach (var testResourceSecret in resourceScope.ScopeSecrets)
             {
-                var migratedSecret = migratedResource.ApiSecrets.FirstOrDefault(x => x.Value == testClientSecret.Value);
+                var migratedSecret = migratedResource.ApiSecrets.FirstOrDefault(x => x.Value == testResourceSecret.Value);
                 migratedSecret.Should().NotBeNull();
 
-                migratedSecret?.Type.Should().Be(testClientSecret.Type);
-                migratedSecret?.Description.Should().Be(testClientSecret.Description);
-                if (testClientSecret.Expiration != null)
-                    migratedSecret?.Expiration?.Ticks.Should().Be(testClientSecret.Expiration.Value.Ticks);
+                migratedSecret?.Type.Should().Be(testResourceSecret.Type);
+                migratedSecret?.Description.Should().Be(testResourceSecret.Description);
+                if (testResourceSecret.Expiration != null)
+                    migratedSecret?.Expiration?.Ticks.Should().Be(testResourceSecret.Expiration.Value.Ticks);
             }
         }
 
+        [Fact]
+        public async Task WhenIdentityScopeMigrated_ExpectCorrectValues()
+        {
+            using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
+            {
+                var sut = new Migrator(
+                    new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
+                    new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
+                    new EntityFrameworkClientWriter(context),
+                    new EntityFrameworkApiResourceWriter(context),
+                    new EntityFrameworkIdentityResourceWriter(context));
+
+                await sut.Migrate();
+            }
+
+            IdentityServer4.EntityFramework.Entities.IdentityResource migratedEfResource;
+            using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
+            {
+                migratedEfResource = context.IdentityResources
+                    .Include(x => x.UserClaims)
+                    .FirstOrDefault(x => x.Name == identityScope.Name);
+            }
+
+            migratedEfResource.Should().NotBeNull();
+            var migratedResource = migratedEfResource.ToModel();
+
+            migratedResource.Should().NotBeNull();
+            migratedResource.Name.Should().Be(identityScope.Name);
+            migratedResource.DisplayName.Should().Be(identityScope.DisplayName);
+            migratedResource.Description.Should().Be(identityScope.Description);
+            migratedResource.Enabled.Should().Be(identityScope.Enabled);
+            migratedResource.Emphasize.Should().Be(identityScope.Emphasize);
+            migratedResource.ShowInDiscoveryDocument.Should().Be(identityScope.ShowInDiscoveryDocument);
+            migratedResource.Required.Should().Be(identityScope.Required);
+
+            foreach (var scopeClaim in identityScope.Claims)
+                migratedResource.UserClaims.Should().Contain(x => x == scopeClaim.Name);
+        }
 
         public void Dispose()
         {
-            using (var context = new ClientConfigurationDbContext(ConnectionString))
+            using (var context = new ClientConfigurationDbContext(ClientsConnectionString))
+                context.Database.Delete();
+            using (var context = new ScopeConfigurationDbContext(ScopesConnectionString))
                 context.Database.Delete();
         }
     }

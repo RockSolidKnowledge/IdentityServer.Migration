@@ -2,6 +2,8 @@
 using System.IO;
 using System.Threading.Tasks;
 using IdentityServer4.EntityFramework.DbContexts;
+using IdentityServer4.EntityFramework.Options;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Rsk.IdentityServer.Migration.Readers;
@@ -13,11 +15,12 @@ namespace Rsk.IdentityServer.Migration
     {
         public static void Main(string[] args)
         {
-            MainAsync(args).GetAwaiter().GetResult();
+            MainAsync().GetAwaiter().GetResult();
+            Console.WriteLine("Completed Migration.");
             Console.ReadKey();
         }
 
-        public static async Task MainAsync(string[] args)
+        private static async Task MainAsync()
         {
             var provider = ConfigureServices();
             var migrator = provider.GetRequiredService<Migrator>();
@@ -34,7 +37,8 @@ namespace Rsk.IdentityServer.Migration
 
             var services = new ServiceCollection();
 
-            services.AddDbContext<ConfigurationDbContext>();
+            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(@"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.output;Integrated Security=SSPI;"));
+            services.AddSingleton(new ConfigurationStoreOptions());
 
             services.AddScoped<IClientReader, EntityFrameworkClientReader>();
             services.AddScoped<IScopeReader, EntityFrameworkScopeReader>();
