@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
+using IdentityServer3.EntityFramework;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Rsk.IdentityServer.Migration.Readers;
 using Rsk.IdentityServer.Migration.Writers;
+using Rsk.IdentityServer.Migration.Writers.Interfaces;
 
 namespace Rsk.IdentityServer.Migration
 {
@@ -37,18 +39,28 @@ namespace Rsk.IdentityServer.Migration
 
             var services = new ServiceCollection();
 
-            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(@"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.output;Integrated Security=SSPI;"));
+            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(config.GetValue<string>("IdentityServer4ConnectionString")));
+            services.AddDbContext<PersistedGrantDbContext>(db => db.UseSqlServer(config.GetValue<string>("IdentityServer4ConnectionString")));
             services.AddSingleton(new ConfigurationStoreOptions());
+            services.AddSingleton(new OperationalStoreOptions());
 
             services.AddScoped<IClientReader, EntityFrameworkClientReader>();
             services.AddScoped<IScopeReader, EntityFrameworkScopeReader>();
+            services.AddScoped<ITokenReader, EntityFrameworkTokenReader>();
 
             services.AddScoped<IClientWriter, EntityFrameworkClientWriter>();
             services.AddScoped<IApiResourceWriter, EntityFrameworkApiResourceWriter>();
             services.AddScoped<IIdentityResourceWriter, EntityFrameworkIdentityResourceWriter>();
+            services.AddScoped<IPersistedGrantsWriter, EntityFrameworkPersistedGrantsWriter>();
 
             services.AddOptions();
-            services.Configure<DbOptions>(config);
+            services.Configure<DbOptions>(opt =>
+                {
+                    opt.IdentityServer3ClientsConnectionString = config.GetValue<string>("IdentityServer3ConnectionString");
+                    opt.IdentityServer3ScopesConnectionString = config.GetValue<string>("IdentityServer3ConnectionString");
+                    opt.IdentityServer3OperationalConnectionString = config.GetValue<string>("IdentityServer3ConnectionString");
+                    opt.IdentityServer4ConnectionString = config.GetValue<string>("IdentityServer4ConnectionString");
+                });
 
             services.AddScoped<Migrator>();
 

@@ -4,16 +4,24 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using FluentAssertions;
+using FluentAssertions.Common;
 using IdentityServer3.Core.Models;
 using IdentityServer3.EntityFramework;
+using IdentityServer3.EntityFramework.Entities;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.EntityFramework.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Rsk.IdentityServer.Migration.Readers;
 using Rsk.IdentityServer.Migration.Writers;
 using Xunit;
+using Client = IdentityServer3.Core.Models.Client;
+using Consent = IdentityServer3.EntityFramework.Entities.Consent;
+using Scope = IdentityServer3.Core.Models.Scope;
+using ScopeClaim = IdentityServer3.Core.Models.ScopeClaim;
+using Token = IdentityServer3.EntityFramework.Entities.Token;
 
 namespace Rsk.IdentityServer.Migration.Tests
 {
@@ -21,15 +29,14 @@ namespace Rsk.IdentityServer.Migration.Tests
     {
         private const string ClientsConnectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.clients;Integrated Security=SSPI;";
         private const string ScopesConnectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.scopes;Integrated Security=SSPI;";
+        private const string OperationalConnectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.operational;Integrated Security=SSPI;";
+
         private readonly DbOptions options = new DbOptions
         {
             IdentityServer3ClientsConnectionString = ClientsConnectionString,
-            IdentityServer3ScopesConnectionString = ScopesConnectionString
+            IdentityServer3ScopesConnectionString = ScopesConnectionString,
+            IdentityServer3OperationalConnectionString = OperationalConnectionString
         };
-
-        private readonly DbContextOptions<ConfigurationDbContext> dbContextOptions = new DbContextOptionsBuilder<ConfigurationDbContext>()
-            .UseInMemoryDatabase("IdentityServer")
-            .Options;
 
         private readonly Client testClient = new Client
         {
@@ -41,27 +48,27 @@ namespace Rsk.IdentityServer.Migration.Tests
             AllowAccessTokensViaBrowser = false,
             AllowClientCredentialsOnly = false,
             AllowRememberConsent = true,
-            AllowedCorsOrigins = {"http://localhost:5001"},
-            AllowedScopes = {"openid", "profile", "api1", "offline_access"},
+            AllowedCorsOrigins = { "http://localhost:5001" },
+            AllowedScopes = { "openid", "profile", "api1", "offline_access" },
             AlwaysSendClientClaims = true,
             AuthorizationCodeLifetime = 300,
-            Claims = {new Claim("test", "123")},
+            Claims = { new Claim("test", "123") },
             ClientId = Guid.NewGuid().ToString(),
             ClientName = Guid.NewGuid().ToString(),
-            ClientSecrets = {new Secret("isthisasecret?yesitis".Sha256())},
+            ClientSecrets = { new Secret("isthisasecret?yesitis".Sha256()) },
             ClientUri = "http://localhost:5001/policy",
             EnableLocalLogin = true,
             Enabled = true,
             Flow = Flows.Hybrid,
-            IdentityProviderRestrictions = {"google", "local"},
+            IdentityProviderRestrictions = { "google", "local" },
             IdentityTokenLifetime = 300,
             IncludeJwtId = false,
             LogoUri = "http://localhost:5001/face.jpg",
             LogoutUri = "http://locahost:5001/logout",
             LogoutSessionRequired = false,
-            PostLogoutRedirectUris = {"http://localhost:5001/"},
+            PostLogoutRedirectUris = { "http://localhost:5001/" },
             PrefixClientClaims = true,
-            RedirectUris = {"http://localhost:5001/cb"},
+            RedirectUris = { "http://localhost:5001/cb" },
             RefreshTokenExpiration = TokenExpiration.Absolute,
             RefreshTokenUsage = TokenUsage.OneTimeOnly,
             RequireConsent = true,
@@ -83,8 +90,8 @@ namespace Rsk.IdentityServer.Migration.Tests
             IncludeAllClaimsForUser = true,
             Required = true,
             ShowInDiscoveryDocument = true,
-            Claims = {new ScopeClaim("sub")},
-            ScopeSecrets = {new Secret(Guid.NewGuid().ToString().Sha256(), Guid.NewGuid().ToString())}
+            Claims = { new ScopeClaim("sub") },
+            ScopeSecrets = { new Secret(Guid.NewGuid().ToString().Sha256(), Guid.NewGuid().ToString()) }
         };
 
         private readonly Scope identityScope = new Scope
@@ -101,13 +108,21 @@ namespace Rsk.IdentityServer.Migration.Tests
             Required = true,
             ShowInDiscoveryDocument = true,
             Claims = { new ScopeClaim("sub") },
-            ScopeSecrets = { new Secret(Guid.NewGuid().ToString().Sha256(), Guid.NewGuid().ToString())}
+            ScopeSecrets = { new Secret(Guid.NewGuid().ToString().Sha256(), Guid.NewGuid().ToString()) }
         };
 
+        private readonly Consent consent = new Consent
+        {
+            ClientId = Guid.NewGuid().ToString(),
+            Scopes = "openid,profile,api1",
+            Subject = Guid.NewGuid().ToString()
+        };
+        
         public MigratorTests()
         {
             System.Data.Entity.Database.SetInitializer(new System.Data.Entity.CreateDatabaseIfNotExists<ClientConfigurationDbContext>());
             System.Data.Entity.Database.SetInitializer(new System.Data.Entity.CreateDatabaseIfNotExists<ScopeConfigurationDbContext>());
+            System.Data.Entity.Database.SetInitializer(new System.Data.Entity.CreateDatabaseIfNotExists<OperationalDbContext>());
 
             using (var context = new ClientConfigurationDbContext(ClientsConnectionString))
             {
@@ -121,37 +136,56 @@ namespace Rsk.IdentityServer.Migration.Tests
                 context.Scopes.Add(identityScope.ToEntity());
                 context.SaveChanges();
             }
+
+            using (var context = new OperationalDbContext(OperationalConnectionString))
+            {
+                context.Consents.Add(consent);
+                context.SaveChanges();
+            }
         }
 
         [Fact]
         public async Task WhenClientMigrated_ExpectCorrectValues()
         {
+            var dbContextOptions = new DbContextOptionsBuilder<ConfigurationDbContext>()
+                 .UseInMemoryDatabase(nameof(WhenClientMigrated_ExpectCorrectValues))
+                 .Options;
+
+            var operationalDbContextOptions = new DbContextOptionsBuilder<PersistedGrantDbContext>()
+                .UseInMemoryDatabase(nameof(WhenClientMigrated_ExpectCorrectValues))
+                .Options;
+
             using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
             {
-                var sut = new Migrator(
-                    new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
-                    new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
-                    new EntityFrameworkClientWriter(context),
-                    new EntityFrameworkApiResourceWriter(context),
-                    new EntityFrameworkIdentityResourceWriter(context));
+                using (var pgContext = new PersistedGrantDbContext(operationalDbContextOptions, new OperationalStoreOptions()))
+                {
+                    var sut = new Migrator(
+                        new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkTokenReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkClientWriter(context),
+                        new EntityFrameworkApiResourceWriter(context),
+                        new EntityFrameworkIdentityResourceWriter(context),
+                        new EntityFrameworkPersistedGrantsWriter(pgContext));
 
-                await sut.Migrate();
+                    await sut.Migrate();
+                }
             }
 
             IdentityServer4.EntityFramework.Entities.Client migratedEfClient;
             using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
             {
                 migratedEfClient = context.Clients
-                    .Include(x => x.AllowedCorsOrigins)
-                    .Include(x => x.AllowedGrantTypes)
-                    .Include(x => x.AllowedScopes)
-                    .Include(x => x.Claims)
-                    .Include(x => x.ClientSecrets)
-                    .Include(x => x.IdentityProviderRestrictions)
-                    .Include(x => x.PostLogoutRedirectUris)
-                    .Include(x => x.Properties)
-                    .Include(x => x.RedirectUris)
-                    .FirstOrDefault(x => x.ClientId == testClient.ClientId);
+                .Include(x => x.AllowedCorsOrigins)
+                .Include(x => x.AllowedGrantTypes)
+                .Include(x => x.AllowedScopes)
+                .Include(x => x.Claims)
+                .Include(x => x.ClientSecrets)
+                .Include(x => x.IdentityProviderRestrictions)
+                .Include(x => x.PostLogoutRedirectUris)
+                .Include(x => x.Properties)
+                .Include(x => x.RedirectUris)
+                .FirstOrDefault(x => x.ClientId == testClient.ClientId);
             }
 
             migratedEfClient.Should().NotBeNull();
@@ -163,7 +197,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             migratedClient.AllowAccessTokensViaBrowser.Should().Be(testClient.AllowAccessTokensViaBrowser);
             migratedClient.AllowRememberConsent.Should().Be(testClient.AllowRememberConsent);
             migratedClient.AllowedCorsOrigins.Should().BeEquivalentTo(testClient.AllowedCorsOrigins);
-            migratedClient.AllowedScopes.Should().Contain(new List<string> {"openid", "profile", "api1"});
+            migratedClient.AllowedScopes.Should().Contain(new List<string> { "openid", "profile", "api1" });
             migratedClient.AlwaysSendClientClaims.Should().Be(testClient.AlwaysSendClientClaims);
             migratedClient.AuthorizationCodeLifetime.Should().Be(testClient.AuthorizationCodeLifetime);
             migratedClient.ClientId.Should().Be(testClient.ClientId);
@@ -173,7 +207,8 @@ namespace Rsk.IdentityServer.Migration.Tests
             migratedClient.Enabled.Should().Be(testClient.Enabled);
             migratedClient.FrontChannelLogoutUri.Should().Be(testClient.LogoutUri);
             migratedClient.FrontChannelLogoutSessionRequired.Should().Be(testClient.LogoutSessionRequired);
-            migratedClient.IdentityProviderRestrictions.Should().BeEquivalentTo(testClient.IdentityProviderRestrictions);
+            migratedClient.IdentityProviderRestrictions.Should()
+                .BeEquivalentTo(testClient.IdentityProviderRestrictions);
             migratedClient.IdentityTokenLifetime.Should().Be(testClient.IdentityTokenLifetime);
             migratedClient.IncludeJwtId.Should().Be(testClient.IncludeJwtId);
             migratedClient.LogoUri.Should().Be(testClient.LogoUri);
@@ -183,7 +218,8 @@ namespace Rsk.IdentityServer.Migration.Tests
             migratedClient.RefreshTokenUsage.Should().Be(IdentityServer4.Models.TokenUsage.OneTimeOnly);
             migratedClient.RequireConsent.Should().Be(testClient.RequireConsent);
             migratedClient.SlidingRefreshTokenLifetime.Should().Be(testClient.SlidingRefreshTokenLifetime);
-            migratedClient.UpdateAccessTokenClaimsOnRefresh.Should().Be(testClient.UpdateAccessTokenClaimsOnRefresh);
+            migratedClient.UpdateAccessTokenClaimsOnRefresh.Should()
+                .Be(testClient.UpdateAccessTokenClaimsOnRefresh);
 
             migratedClient.ClientClaimsPrefix.Should().Be("client_");
             migratedClient.AllowedScopes.Should().NotContain("offline_access");
@@ -191,7 +227,8 @@ namespace Rsk.IdentityServer.Migration.Tests
 
             foreach (var testClientSecret in testClient.ClientSecrets)
             {
-                var migratedSecret = migratedClient.ClientSecrets.FirstOrDefault(x => x.Value == testClientSecret.Value);
+                var migratedSecret =
+                    migratedClient.ClientSecrets.FirstOrDefault(x => x.Value == testClientSecret.Value);
                 migratedSecret.Should().NotBeNull();
 
                 migratedSecret?.Type.Should().Be(testClientSecret.Type);
@@ -199,21 +236,35 @@ namespace Rsk.IdentityServer.Migration.Tests
                 if (testClientSecret.Expiration != null)
                     migratedSecret?.Expiration?.Ticks.Should().Be(testClientSecret.Expiration.Value.Ticks);
             }
+
         }
 
         [Fact]
         public async Task WhenApiScopeMigrated_ExpectCorrectValues()
         {
+            var dbContextOptions = new DbContextOptionsBuilder<ConfigurationDbContext>()
+                .UseInMemoryDatabase(nameof(WhenApiScopeMigrated_ExpectCorrectValues))
+                .Options;
+
+            var operationalDbContextOptions = new DbContextOptionsBuilder<PersistedGrantDbContext>()
+                .UseInMemoryDatabase(nameof(WhenApiScopeMigrated_ExpectCorrectValues))
+                .Options;
+
             using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
             {
-                var sut = new Migrator(
-                    new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
-                    new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
-                    new EntityFrameworkClientWriter(context),
-                    new EntityFrameworkApiResourceWriter(context),
-                    new EntityFrameworkIdentityResourceWriter(context));
+                using (var pgContext = new PersistedGrantDbContext(operationalDbContextOptions, new OperationalStoreOptions()))
+                {
+                    var sut = new Migrator(
+                        new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkTokenReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkClientWriter(context),
+                        new EntityFrameworkApiResourceWriter(context),
+                        new EntityFrameworkIdentityResourceWriter(context),
+                        new EntityFrameworkPersistedGrantsWriter(pgContext));
 
-                await sut.Migrate();
+                    await sut.Migrate();
+                }
             }
 
             IdentityServer4.EntityFramework.Entities.ApiResource migratedEfResource;
@@ -262,16 +313,29 @@ namespace Rsk.IdentityServer.Migration.Tests
         [Fact]
         public async Task WhenIdentityScopeMigrated_ExpectCorrectValues()
         {
+            var dbContextOptions = new DbContextOptionsBuilder<ConfigurationDbContext>()
+                .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
+                .Options;
+
+            var operationalDbContextOptions = new DbContextOptionsBuilder<PersistedGrantDbContext>()
+                .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
+                .Options;
+
             using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
             {
-                var sut = new Migrator(
-                    new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
-                    new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
-                    new EntityFrameworkClientWriter(context),
-                    new EntityFrameworkApiResourceWriter(context),
-                    new EntityFrameworkIdentityResourceWriter(context));
+                using (var pgContext = new PersistedGrantDbContext(operationalDbContextOptions, new OperationalStoreOptions()))
+                {
+                    var sut = new Migrator(
+                        new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkTokenReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkClientWriter(context),
+                        new EntityFrameworkApiResourceWriter(context),
+                        new EntityFrameworkIdentityResourceWriter(context),
+                        new EntityFrameworkPersistedGrantsWriter(pgContext));
 
-                await sut.Migrate();
+                    await sut.Migrate();
+                }
             }
 
             IdentityServer4.EntityFramework.Entities.IdentityResource migratedEfResource;
@@ -296,6 +360,48 @@ namespace Rsk.IdentityServer.Migration.Tests
 
             foreach (var scopeClaim in identityScope.Claims)
                 migratedResource.UserClaims.Should().Contain(x => x == scopeClaim.Name);
+        }
+
+        [Fact]
+        public async Task WhenConsentMigrated_ExpectCorrectValues()
+        {
+            var dbContextOptions = new DbContextOptionsBuilder<ConfigurationDbContext>()
+                .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
+                .Options;
+
+            var operationalDbContextOptions = new DbContextOptionsBuilder<PersistedGrantDbContext>()
+                .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
+                .Options;
+
+            using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
+            {
+                using (var pgContext = new PersistedGrantDbContext(operationalDbContextOptions, new OperationalStoreOptions()))
+                {
+                    var sut = new Migrator(
+                        new EntityFrameworkClientReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkScopeReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkTokenReader(new OptionsWrapper<DbOptions>(options)),
+                        new EntityFrameworkClientWriter(context),
+                        new EntityFrameworkApiResourceWriter(context),
+                        new EntityFrameworkIdentityResourceWriter(context),
+                        new EntityFrameworkPersistedGrantsWriter(pgContext));
+
+                    await sut.Migrate();
+                }
+            }
+
+            using (var context = new PersistedGrantDbContext(operationalDbContextOptions, new OperationalStoreOptions()))
+            {
+                var foundConsent = context.PersistedGrants.FirstOrDefault(x => x.ClientId == consent.ClientId);
+
+                foundConsent.Should().NotBeNull();
+                foundConsent.ClientId.Should().Be(consent.ClientId);
+                foundConsent.SubjectId.Should().Be(consent.Subject);
+
+                var data = JsonConvert.DeserializeObject<IdentityServer4.Models.Consent>(foundConsent.Data);
+
+                data.Scopes.Should().BeEquivalentTo(consent.Scopes.Split(','));
+            }
         }
 
         public void Dispose()
