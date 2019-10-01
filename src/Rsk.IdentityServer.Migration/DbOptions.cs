@@ -4,6 +4,5 @@
     {
         public string IdentityServer3ClientsConnectionString { get; set; }
         public string IdentityServer3ScopesConnectionString { get; set; }
-        public string IdentityServer4ConnectionString { get; set; }
     }
 }

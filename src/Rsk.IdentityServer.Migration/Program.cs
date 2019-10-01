@@ -37,7 +37,7 @@ namespace Rsk.IdentityServer.Migration
 
             var services = new ServiceCollection();
 
-            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(@"Data Source=(LocalDb)\MSSQLLocalDB;Initial Catalog=migration.test.output;Integrated Security=SSPI;"));
+            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(config.GetValue<string>("IdentityServer4ConnectionString")));
             services.AddSingleton(new ConfigurationStoreOptions());
 
             services.AddScoped<IClientReader, EntityFrameworkClientReader>();
