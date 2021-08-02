@@ -1,28 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
+using Duende.IdentityServer;
+using Duende.IdentityServer.Models;
 using IdentityServer3.Core.Models;
-using IdentityServer4;
-using IdentityServer4.Models;
-using AccessTokenType = IdentityServer4.Models.AccessTokenType;
-using TokenExpiration = IdentityServer4.Models.TokenExpiration;
-using TokenUsage = IdentityServer4.Models.TokenUsage;
+using AccessTokenType = IdentityServer3.Core.Models.AccessTokenType;
+using Client = IdentityServer3.Core.Models.Client;
 
 namespace Rsk.IdentityServer.Migration.Mappers
 {
     public static class ClientMappers
     {
-        public static IdentityServer4.Models.Client ToVersion4(this IdentityServer3.Core.Models.Client client)
+        public static Duende.IdentityServer.Models.Client ToVersion4(this Client client)
         {
             if (client == null) return null;
 
-            var mappedClient = new IdentityServer4.Models.Client
+            var mappedClient = new Duende.IdentityServer.Models.Client
             {
                 AbsoluteRefreshTokenLifetime = client.AbsoluteRefreshTokenLifetime,
                 AccessTokenLifetime = client.AccessTokenLifetime,
-                AccessTokenType = client.AccessTokenType == IdentityServer3.Core.Models.AccessTokenType.Jwt
-                    ? AccessTokenType.Jwt
-                    : AccessTokenType.Reference,
+                AccessTokenType = client.AccessTokenType == AccessTokenType.Jwt
+                    ? Duende.IdentityServer.Models.AccessTokenType.Jwt
+                    : Duende.IdentityServer.Models.AccessTokenType.Reference,
                 AllowAccessTokensViaBrowser = client.AllowAccessTokensViaBrowser,
                 AllowOfflineAccess = client.AllowedScopes.Contains("offline_access"),
                 AllowPlainTextPkce = false, // not an option in IdentityServer 3
@@ -33,11 +33,11 @@ namespace Rsk.IdentityServer.Migration.Mappers
                 AlwaysIncludeUserClaimsInIdToken = false, // not an option per client in IdentityServer 3
                 AlwaysSendClientClaims = client.AlwaysSendClientClaims,
                 AuthorizationCodeLifetime = client.AuthorizationCodeLifetime,
-                Claims = client.Claims,
+                Claims = ToClientClaims(client.Claims),
                 ClientName = client.ClientName,
                 ClientId = client.ClientId,
                 ClientClaimsPrefix = client.PrefixClientClaims ? "client_" : null,
-                ClientSecrets = client.ClientSecrets.Select(x => x.ToVersion4()).ToList(),
+                ClientSecrets = client.ClientSecrets.Select(x => x.ToDuende()).ToList(),
                 ClientUri = client.ClientUri,
                 Enabled = client.Enabled,
                 EnableLocalLogin = client.EnableLocalLogin,
@@ -51,11 +51,11 @@ namespace Rsk.IdentityServer.Migration.Mappers
                 ProtocolType = IdentityServerConstants.ProtocolTypes.OpenIdConnect,
                 RedirectUris = client.RedirectUris,
                 RefreshTokenExpiration = client.RefreshTokenExpiration == IdentityServer3.Core.Models.TokenExpiration.Absolute
-                    ? TokenExpiration.Absolute
-                    : TokenExpiration.Sliding,
+                    ? Duende.IdentityServer.Models.TokenExpiration.Absolute
+                    : Duende.IdentityServer.Models.TokenExpiration.Sliding,
                 RefreshTokenUsage = client.RefreshTokenUsage == IdentityServer3.Core.Models.TokenUsage.OneTimeOnly
-                    ? TokenUsage.OneTimeOnly
-                    : TokenUsage.ReUse,
+                    ? Duende.IdentityServer.Models.TokenUsage.OneTimeOnly
+                    : Duende.IdentityServer.Models.TokenUsage.ReUse,
                 RequireClientSecret = true, // not an option in IdentityServer 3
                 RequireConsent = client.RequireConsent,
                 RequirePkce = client.Flow == Flows.AuthorizationCodeWithProofKey || client.Flow == Flows.HybridWithProofKey,
@@ -91,6 +91,11 @@ namespace Rsk.IdentityServer.Migration.Mappers
                 default:
                     throw new ArgumentOutOfRangeException(nameof(flow), flow, "Invalid value for Flow type");
             }
+        }
+
+        private static ICollection<ClientClaim> ToClientClaims(this List<Claim> claims)
+        {
+            return claims.Select(x => new ClientClaim(x.Type, x.Value, x.ValueType)).ToList();
         }
     }
 }

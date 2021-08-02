@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
+using Duende.IdentityServer.Models;
 using FluentAssertions;
 using IdentityServer3.Core.Models;
-using IdentityServer4.Models;
 using Rsk.IdentityServer.Migration.Mappers;
 using Xunit;
 using AccessTokenType = IdentityServer3.Core.Models.AccessTokenType;
@@ -60,7 +60,7 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             mappedClient.Should().NotBeNull();
             mappedClient.AbsoluteRefreshTokenLifetime.Should().Be(client.AbsoluteRefreshTokenLifetime);
             mappedClient.AccessTokenLifetime.Should().Be(client.AccessTokenLifetime);
-            mappedClient.AccessTokenType.Should().Be(IdentityServer4.Models.AccessTokenType.Reference);
+            mappedClient.AccessTokenType.Should().Be(Duende.IdentityServer.Models.AccessTokenType.Reference);
             mappedClient.AllowAccessTokensViaBrowser.Should().Be(client.AllowAccessTokensViaBrowser);
             mappedClient.AllowRememberConsent.Should().Be(client.AllowRememberConsent);
             mappedClient.AllowedCorsOrigins.Should().BeEquivalentTo(client.AllowedCorsOrigins);
@@ -80,8 +80,8 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             mappedClient.LogoUri.Should().Be(client.LogoUri);
             mappedClient.PostLogoutRedirectUris.Should().BeEquivalentTo(client.PostLogoutRedirectUris);
             mappedClient.RedirectUris.Should().BeEquivalentTo(client.RedirectUris);
-            mappedClient.RefreshTokenExpiration.Should().Be(IdentityServer4.Models.TokenExpiration.Sliding);
-            mappedClient.RefreshTokenUsage.Should().Be(IdentityServer4.Models.TokenUsage.ReUse);
+            mappedClient.RefreshTokenExpiration.Should().Be(Duende.IdentityServer.Models.TokenExpiration.Sliding);
+            mappedClient.RefreshTokenUsage.Should().Be(Duende.IdentityServer.Models.TokenUsage.ReUse);
             mappedClient.RequireConsent.Should().Be(client.RequireConsent);
             mappedClient.SlidingRefreshTokenLifetime.Should().Be(client.SlidingRefreshTokenLifetime);
             mappedClient.UpdateAccessTokenClaimsOnRefresh.Should().Be(client.UpdateAccessTokenClaimsOnRefresh);

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Duende.IdentityServer;
 using FluentAssertions;
 using IdentityServer3.Core;
 using IdentityServer3.Core.Models;
-using IdentityServer4;
 using Rsk.IdentityServer.Migration.Mappers;
 using Xunit;
 
@@ -18,8 +18,9 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             var scope = new Scope { Type = ScopeType.Identity };
             var scopes = new List<Scope> {scope};
 
-            scopes.GetApiResources().Should().BeEmpty();
-
+            var result = scopes.GetApiResourcesAndApiScopes();
+            result.apiResources.Should().BeEmpty();
+            result.scopes.Should().BeEmpty();
         }
 
         [Fact]
@@ -42,12 +43,15 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             };
             var scopes = new List<Scope> { scope };
 
-            var resources = scopes.GetApiResources();
+            var result = scopes.GetApiResourcesAndApiScopes();
 
-            resources.Should().NotBeEmpty();
-            resources.Should().HaveCount(scopes.Count);
+            result.apiResources.Should().NotBeEmpty();
+            result.scopes.Should().NotBeEmpty();
 
-            var resource = resources.Single(x => x.Name == scope.Name);
+            result.apiResources.Should().HaveCount(scopes.Count);
+            result.scopes.Should().HaveCount(scopes.Count);
+            
+            var resource = result.apiResources.Single(x => x.Name == scope.Name);
 
             resource.Should().NotBeNull();
             resource.Name.Should().Be(scope.Name);
@@ -71,25 +75,28 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             };
             var scopes = new List<Scope> { scope };
 
-            var resources = scopes.GetApiResources();
+            var result = scopes.GetApiResourcesAndApiScopes();
 
-            resources.Should().NotBeEmpty();
-            resources.Should().HaveCount(scopes.Count);
+            result.apiResources.Should().NotBeEmpty();
+            result.scopes.Should().NotBeEmpty();
 
-            var resource = resources.Single(x => x.Name == scope.Name);
+            result.apiResources.Should().HaveCount(scopes.Count);
+            result.scopes.Should().HaveCount(scopes.Count);
+
+            var resource = result.apiResources.Single(x => x.Name == scope.Name);
 
             resource.Should().NotBeNull();
             resource.Scopes.Should().NotBeEmpty();
             resource.Scopes.Should().HaveCount(1);
 
-            var resourceScope = resource.Scopes.Single();
-            resourceScope.Description.Should().Be(scope.Description);
-            resourceScope.DisplayName.Should().Be(scope.DisplayName);
-            resourceScope.Emphasize.Should().Be(scope.Emphasize);
-            resourceScope.Name.Should().Be(scope.Name);
-            resourceScope.Required.Should().Be(scope.Required);
-            resourceScope.ShowInDiscoveryDocument.Should().Be(scope.ShowInDiscoveryDocument);
-            resourceScope.UserClaims.Should().BeEmpty();
+            var apiScope = result.scopes.Single();
+            apiScope.Description.Should().Be(scope.Description);
+            apiScope.DisplayName.Should().Be(scope.DisplayName);
+            apiScope.Emphasize.Should().Be(scope.Emphasize);
+            apiScope.Name.Should().Be(scope.Name);
+            apiScope.Required.Should().Be(scope.Required);
+            apiScope.ShowInDiscoveryDocument.Should().Be(scope.ShowInDiscoveryDocument);
+            apiScope.UserClaims.Should().BeEmpty();
         }
 
         [Fact]
@@ -104,12 +111,15 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             var scope = new Scope { Type = ScopeType.Resource, Claims = { scopeClaim } };
             var scopes = new List<Scope> { scope };
 
-            var resources = scopes.GetApiResources();
+            var result = scopes.GetApiResourcesAndApiScopes();
+            
+            result.apiResources.Should().NotBeEmpty();
+            result.scopes.Should().NotBeEmpty();
 
-            resources.Should().NotBeEmpty();
-            resources.Should().HaveCount(scopes.Count);
+            result.apiResources.Should().HaveCount(scopes.Count);
+            result.scopes.Should().HaveCount(scopes.Count);
 
-            var resource = resources.Single(x => x.Name == scope.Name);
+            var resource = result.apiResources.Single(x => x.Name == scope.Name);
 
             resource.UserClaims.Should().NotBeEmpty();
             resource.UserClaims.Should().HaveCount(scope.Claims.Count);
@@ -117,8 +127,9 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
 
             resource.Scopes.Should().NotBeEmpty();
             resource.Scopes.Should().HaveCount(1);
-            var resourceScope = resource.Scopes.Single();
-            resourceScope.UserClaims.Should().BeEmpty();
+            
+            var apiScope = result.scopes.Single();
+            apiScope.UserClaims.Should().BeEmpty();
         }
 
         [Fact]
@@ -134,12 +145,15 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
             var scope = new Scope { Type = ScopeType.Resource, ScopeSecrets = { secret } };
             var scopes = new List<Scope> { scope };
 
-            var resources = scopes.GetApiResources();
+            var result = scopes.GetApiResourcesAndApiScopes();
+            
+            result.apiResources.Should().NotBeEmpty();
+            result.scopes.Should().NotBeEmpty();
 
-            resources.Should().NotBeEmpty();
-            resources.Should().HaveCount(scopes.Count);
+            result.apiResources.Should().HaveCount(scopes.Count);
+            result.scopes.Should().HaveCount(scopes.Count);
 
-            var resource = resources.Single(x => x.Name == scope.Name);
+            var resource = result.apiResources.Single(x => x.Name == scope.Name);
 
             resource.ApiSecrets.Should().NotBeEmpty();
             resource.ApiSecrets.Should().HaveCount(scope.ScopeSecrets.Count);

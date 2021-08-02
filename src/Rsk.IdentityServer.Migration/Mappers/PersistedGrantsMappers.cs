@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using IdentityServer4;
-using IdentityServer4.Models;
-using IdentityServer4.Stores.Serialization;
-using AccessTokenType = IdentityServer4.Models.AccessTokenType;
+using Duende.IdentityServer;
+using Duende.IdentityServer.Models;
+using Duende.IdentityServer.Stores.Serialization;
 using Consent = IdentityServer3.EntityFramework.Entities.Consent;
 using RefreshToken = IdentityServer3.Core.Models.RefreshToken;
 using Token = IdentityServer3.EntityFramework.Entities.Token;
@@ -12,9 +11,9 @@ namespace Rsk.IdentityServer.Migration.Mappers
 {
     public static class ConsentMapper
     {
-        public static IdentityServer4.Models.Consent ToV4Consent(this Consent consent)
+        public static Duende.IdentityServer.Models.Consent ToV4Consent(this Consent consent)
         {
-            return new IdentityServer4.Models.Consent
+            return new()
             {
                 ClientId = consent.ClientId,
                 CreationTime = DateTime.UtcNow, // not stored in IdentityServer3 Consent
@@ -41,12 +40,12 @@ namespace Rsk.IdentityServer.Migration.Mappers
             };
         }
 
-        public static IdentityServer4.Models.RefreshToken ToVersion4RefreshToken(this RefreshToken refreshToken)
+        public static Duende.IdentityServer.Models.RefreshToken ToVersion4RefreshToken(this RefreshToken refreshToken)
         {
-            return new IdentityServer4.Models.RefreshToken
+            return new()
             {
                 CreationTime = refreshToken.CreationTime.UtcDateTime,
-                AccessToken = new IdentityServer4.Models.Token
+                AccessToken = new Duende.IdentityServer.Models.Token
                 {
                     CreationTime = refreshToken.AccessToken.CreationTime.UtcDateTime,
                     AccessTokenType = AccessTokenType.Jwt,
@@ -67,7 +66,7 @@ namespace Rsk.IdentityServer.Migration.Mappers
         {
             var refToken = serializer.Deserialize<IdentityServer3.Core.Models.Token>(token.JsonCode);
             
-            var ids4ReferenceToken =  new IdentityServer4.Models.Token
+            var ids4ReferenceToken =  new Duende.IdentityServer.Models.Token
             {
                 ClientId = refToken.ClientId,
                 CreationTime = refToken.CreationTime.UtcDateTime,

@@ -43,8 +43,12 @@ namespace Rsk.IdentityServer.Migration
             var (tokens, consents) = await tokenReader.Read();
            
             await clientWriter.Write(clients.Select(x => x.ToVersion4()).ToList());
-            await apiResourceWriter.Write(scopes.GetApiResources());
+
+            var result = scopes.GetApiResourcesAndApiScopes();
+            await apiResourceWriter.Write(result.apiResources, result.scopes);
+
             await identityResourceWriter.Write(scopes.GetIdentityResources());
+
             await persistedGrantsWriter.Write(tokens, consents);
         }
     }

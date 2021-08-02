@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Duende.IdentityServer.EntityFramework.DbContexts;
+using Duende.IdentityServer.EntityFramework.Stores;
+using Duende.IdentityServer.Services;
+using Duende.IdentityServer.Stores;
+using Duende.IdentityServer.Stores.Serialization;
 using IdentityServer3.EntityFramework.Entities;
-using IdentityServer4.EntityFramework.DbContexts;
-using IdentityServer4.EntityFramework.Stores;
-using IdentityServer4.Services;
-using IdentityServer4.Stores;
-using IdentityServer4.Stores.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Rsk.IdentityServer.Migration.Mappers;
 using Rsk.IdentityServer.Migration.Writers.Interfaces;

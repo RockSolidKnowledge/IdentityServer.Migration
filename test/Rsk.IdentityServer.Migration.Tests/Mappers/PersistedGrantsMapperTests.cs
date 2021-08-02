@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using Duende.IdentityServer;
+using Duende.IdentityServer.Stores.Serialization;
 using FluentAssertions;
-using IdentityModel;
 using IdentityServer3.Core.Models;
-using IdentityServer4;
-using IdentityServer4.Stores.Serialization;
-using Newtonsoft.Json;
 using Rsk.IdentityServer.Migration.Mappers;
 using Xunit;
-using AccessTokenType = IdentityServer4.Models.AccessTokenType;
 using Consent = IdentityServer3.EntityFramework.Entities.Consent;
 
 namespace Rsk.IdentityServer.Migration.Tests.Mappers
