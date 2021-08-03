@@ -2,30 +2,28 @@
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Threading.Tasks;
-using IdentityServer3.Core.Models;
 using IdentityServer3.EntityFramework;
-using Microsoft.Extensions.Options;
-using EntitiesMap = IdentityServer3.EntityFramework.Entities.EntitiesMap;
+using IdentityServer3.EntityFramework.Entities;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace Rsk.IdentityServer.Migration.Readers
 {
     public class EntityFrameworkScopeReader : IScopeReader
     {
-        private readonly DbOptions options;
+        private readonly ScopeConfigurationDbContext context;
 
-        public EntityFrameworkScopeReader(IOptions<DbOptions> optionsAccessor)
+        public EntityFrameworkScopeReader(ScopeConfigurationDbContext context)
         {
-            options = optionsAccessor?.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IList<Scope>> Read()
+        public IList<Scope> Read()
         {
-            using (var context = new ScopeConfigurationDbContext(options.IdentityServer3ScopesConnectionString))
-            {
-                var scopes = await context.Scopes.ToListAsync();
-                return scopes.Select(EntitiesMap.ToModel).ToList();
-            }
+            var scopes = context.Scopes
+                .Include(x => x.ScopeClaims)
+                .ToList();
+
+            return scopes;
         }
     }
 }

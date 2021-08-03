@@ -2,30 +2,34 @@
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Threading.Tasks;
-using IdentityServer3.Core.Models;
 using IdentityServer3.EntityFramework;
-using Microsoft.Extensions.Options;
-using EntitiesMap = IdentityServer3.EntityFramework.Entities.EntitiesMap;
+using IdentityServer3.EntityFramework.Entities;
 
 namespace Rsk.IdentityServer.Migration.Readers
 {
     public class EntityFrameworkClientReader : IClientReader
     {
-        private readonly DbOptions options;
+        private readonly ClientConfigurationDbContext context;
 
-        public EntityFrameworkClientReader(IOptions<DbOptions> optionsAccessor)
+        public EntityFrameworkClientReader(ClientConfigurationDbContext context)
         {
-            options = optionsAccessor?.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<IList<Client>> Read()
+        public IList<Client> Read()
         {
-            using (var context = new ClientConfigurationDbContext(options.IdentityServer3ClientsConnectionString))
-            {
-                var clients = await context.Clients.ToListAsync();
-                return clients.Select(EntitiesMap.ToModel).ToList();
-            }
+            var clients = context.Clients
+                .Include(x => x.AllowedCorsOrigins)
+                .Include(x => x.AllowedCustomGrantTypes)
+                .Include(x => x.AllowedScopes)
+                .Include(x => x.Claims)
+                .Include(x => x.IdentityProviderRestrictions)
+                .Include(x => x.RedirectUris)
+                .Include(x => x.PostLogoutRedirectUris)
+                .Include(x => x.ClientSecrets)
+                .ToList();
+
+            return clients;
         }
     }
 }

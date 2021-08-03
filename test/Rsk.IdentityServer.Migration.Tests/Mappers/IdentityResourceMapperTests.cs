@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using IdentityServer3.Core.Models;
+using IdentityServer3.EntityFramework.Entities;
 using Rsk.IdentityServer.Migration.Mappers;
 using Xunit;
+using Scope = IdentityServer3.EntityFramework.Entities.Scope;
+using ScopeClaim = IdentityServer3.EntityFramework.Entities.ScopeClaim;
 
 namespace Rsk.IdentityServer.Migration.Tests.Mappers
 {
@@ -13,7 +16,7 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
         [Fact]
         public void GivenApiScope_ExpectEmptyCollectionReturned()
         {
-            var scope = new Scope { Type = ScopeType.Resource };
+            var scope = new Scope { Type = (int) ScopeType.Resource };
             var scopes = new List<Scope> {scope};
 
             scopes.GetIdentityResources().Should().BeEmpty();
@@ -31,11 +34,11 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
                 Name = Guid.NewGuid().ToString(),
                 Required = true,
                 ShowInDiscoveryDocument = false,
-                Type = ScopeType.Identity,
+                Type = (int) ScopeType.Identity,
                 AllowUnrestrictedIntrospection = true, // data will be lost
                 ClaimsRule = Guid.NewGuid().ToString(), // data will be lost
                 IncludeAllClaimsForUser = true, // data will be lost
-                ScopeSecrets = { new Secret("secret") } // data will be lost
+                ScopeSecrets = new List<ScopeSecret>{ new() {Value = "secret"} } // data will be lost
             };
             var scopes = new List<Scope> { scope };
 
@@ -65,7 +68,7 @@ namespace Rsk.IdentityServer.Migration.Tests.Mappers
                 Description = Guid.NewGuid().ToString(), // data will be lost
                 AlwaysIncludeInIdToken = true // data will be lost
             };
-            var scope = new Scope { Type = ScopeType.Identity, Claims = { scopeClaim } };
+            var scope = new Scope { Type = (int) ScopeType.Identity, ScopeClaims= new List<ScopeClaim>(){ scopeClaim } };
             var scopes = new List<Scope> { scope };
 
             var resources = scopes.GetIdentityResources();
