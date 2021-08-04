@@ -18,7 +18,6 @@
   <ItemGroup>
     <PackageReference Include="Duende.IdentityServer" Version="5.2.2" />
     <PackageReference Include="Duende.IdentityServer.EntityFramework" Version="5.2.2" />
-    <PackageReference Include="Effort.EF6" Version="2.2.14" />
     <PackageReference Include="EntityFramework" Version="6.4.4" />
     <PackageReference Include="IdentityServer3" Version="2.6.3" />
     <PackageReference Include="IdentityServer3.EntityFramework" Version="2.6.0" />

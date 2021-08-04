@@ -19,6 +19,7 @@ namespace Rsk.IdentityServer.Migration.Tests
 {
     public class MigratorTests
     {
+        // Empty test database
         private const string IdentityServer3DbContext = "Server=.;User Id=Identity;Password=Password123!;Database=IdentityServer3Db;";
         
         private readonly Client testClient = new Client
