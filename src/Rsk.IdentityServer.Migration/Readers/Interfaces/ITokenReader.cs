@@ -4,8 +4,8 @@ using IdentityServer3.EntityFramework.Entities;
 
 namespace Rsk.IdentityServer.Migration.Readers
 {
-    public interface IScopeReader
+    public interface ITokenReader
     {
-        Task<List<Scope>> Read();
+        Task<(IList<Token>, IList<Consent>)> Read();
     }
 }

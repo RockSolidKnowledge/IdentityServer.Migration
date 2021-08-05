@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using IdentityServer4.Models;
+using Duende.IdentityServer.Models;
 
 namespace Rsk.IdentityServer.Migration.Writers
 {

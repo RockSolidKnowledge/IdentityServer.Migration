@@ -33,9 +33,10 @@ namespace Rsk.IdentityServer.Migration
         {
             var clients = await clientReader.Read();
             var scopes = await scopeReader.Read();
-
-            await clientWriter.Write(clients.Select(x => x.ToVersion4()).ToList());
-            await apiResourceWriter.Write(scopes.GetApiResources());
+            var mappedScopes = scopes.GetApiResourcesAndApiScopes();
+            
+            await clientWriter.Write(clients.Select(x => x.ToDuende()).ToList());
+            await apiResourceWriter.Write(mappedScopes.apiResources, mappedScopes.scopes);
             await identityResourceWriter.Write(scopes.GetIdentityResources());
         }
     }
