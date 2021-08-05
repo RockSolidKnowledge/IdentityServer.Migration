@@ -39,7 +39,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             Claims = new List<ClientClaim>() { new() { Type = "test", Value = "123" } },
             ClientId = Guid.NewGuid().ToString(),
             ClientName = Guid.NewGuid().ToString(),
-            ClientSecrets = new List<ClientSecret>() { new() { Value = "isthisasecret?yesitis".Sha256() } },
+            ClientSecrets = new List<ClientSecret>() { new() { Value = "isthisasecret?yesitis".Sha256(), Type = "SharedSecret" } },
             ClientUri = "http://localhost:5001/policy",
             EnableLocalLogin = true,
             Enabled = true,
@@ -75,7 +75,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             Required = true,
             ShowInDiscoveryDocument = true,
             ScopeClaims = new List<IdentityServer3.EntityFramework.Entities.ScopeClaim> { new() { Name = "sub" } },
-            ScopeSecrets = new List<ScopeSecret> { new ScopeSecret { Value = Guid.NewGuid().ToString().Sha256() } }
+            ScopeSecrets = new List<ScopeSecret> { new ScopeSecret { Value = Guid.NewGuid().ToString().Sha256(), Type = "SharedSecret"} }
         };
 
         private readonly IdentityServer3.EntityFramework.Entities.Scope identityScope = new()
@@ -92,7 +92,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             Required = true,
             ShowInDiscoveryDocument = true,
             ScopeClaims = new List<IdentityServer3.EntityFramework.Entities.ScopeClaim> { new() { Name = "sub"} },
-            ScopeSecrets = new List<ScopeSecret> { new() { Value = Guid.NewGuid().ToString().Sha256() } }
+            ScopeSecrets = new List<ScopeSecret> { new() { Value = Guid.NewGuid().ToString().Sha256(), Type = "SharedSecret" } }
         };
         
         public MigratorTests()
