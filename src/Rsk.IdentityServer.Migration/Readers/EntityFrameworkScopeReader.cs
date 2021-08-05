@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Threading.Tasks;
 using IdentityServer3.EntityFramework;
 using IdentityServer3.EntityFramework.Entities;
 using Microsoft.EntityFrameworkCore.Design;
@@ -17,11 +18,12 @@ namespace Rsk.IdentityServer.Migration.Readers
             this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IList<Scope> Read()
+        public Task<List<Scope>> Read()
         {
             var scopes = context.Scopes
                 .Include(x => x.ScopeClaims)
-                .ToList();
+                .Include(x=>x.ScopeSecrets)
+                .ToListAsync();
 
             return scopes;
         }

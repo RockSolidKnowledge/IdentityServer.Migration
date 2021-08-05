@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Rsk.IdentityServer.Migration.Mappers;
 using Rsk.IdentityServer.Migration.Readers;
 using Rsk.IdentityServer.Migration.Writers;
-using Rsk.IdentityServer.Migration.Writers.Interfaces;
 
 namespace Rsk.IdentityServer.Migration
 {
@@ -32,14 +31,12 @@ namespace Rsk.IdentityServer.Migration
 
         public async Task Migrate()
         {
-            var clients = clientReader.Read();
-            var scopes = scopeReader.Read();
-           
+            var clients = await clientReader.Read();
+            var scopes = await scopeReader.Read();
+            var mappedScopes = scopes.GetApiResourcesAndApiScopes();
+            
             await clientWriter.Write(clients.Select(x => x.ToDuende()).ToList());
-
-            var result = scopes.GetApiResourcesAndApiScopes();
-            await apiResourceWriter.Write(result.apiResources, result.scopes);
-
+            await apiResourceWriter.Write(mappedScopes.apiResources, mappedScopes.scopes);
             await identityResourceWriter.Write(scopes.GetIdentityResources());
         }
     }
