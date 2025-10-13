@@ -38,10 +38,13 @@ namespace Rsk.IdentityServer.Migration
 
             var services = new ServiceCollection();
 
-            var identityServer4ConnectionString = config.GetValue<string>("IdentityServer4ConnectionString");
+            var duendeIdentityServerConnectionString = config.GetValue<string>("DuendeIdentityServerConnectionString");
 
-            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(identityServer4ConnectionString));
-            services.AddSingleton(new ConfigurationStoreOptions());
+            services.AddDbContext<ConfigurationDbContext>(db => db.UseSqlServer(duendeIdentityServerConnectionString));
+            services.AddSingleton(new ConfigurationStoreOptions()
+            {
+                DefaultSchema = "dbo"
+            });
             services.AddSingleton(new OperationalStoreOptions());
 
             var identityServer3ConnectionString = config.GetValue<string>("IdentityServer3ConnectionString");

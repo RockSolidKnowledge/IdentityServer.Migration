@@ -94,7 +94,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             ScopeClaims = new List<IdentityServer3.EntityFramework.Entities.ScopeClaim> { new() { Name = "sub"} },
             ScopeSecrets = new List<ScopeSecret> { new() { Value = Guid.NewGuid().ToString().Sha256(), Type = "SharedSecret" } }
         };
-        
+
         public MigratorTests()
         {
             using (var context = new ClientConfigurationDbContext(IdentityServer3DbContext))
@@ -121,7 +121,13 @@ namespace Rsk.IdentityServer.Migration.Tests
                 .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
                 .Options;
 
-            var ids4Context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions());
+            var ids4Context = new ConfigurationDbContext(dbContextOptions)
+            {
+                StoreOptions = new ConfigurationStoreOptions
+                {
+                    DefaultSchema = "IdSrv"
+                }
+            };
 
             var sut = new Migrator(
                 new EntityFrameworkClientReader(clientsContext),
@@ -133,7 +139,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             await sut.Migrate();
 
             Duende.IdentityServer.EntityFramework.Entities.Client migratedEfClient;
-            using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
+            await using (var context = new ConfigurationDbContext(dbContextOptions))
             {
                 migratedEfClient = context.Clients
                 .Include(x => x.AllowedCorsOrigins)
@@ -209,8 +215,13 @@ namespace Rsk.IdentityServer.Migration.Tests
                 .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
                 .Options;
 
-            var ids4Context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions());
-
+            var ids4Context = new ConfigurationDbContext(dbContextOptions)
+            {
+                StoreOptions = new ConfigurationStoreOptions
+                {
+                    DefaultSchema = "IdSrv"
+                }
+            };
             var sut = new Migrator(
                 new EntityFrameworkClientReader(clientsContext),
                 new EntityFrameworkScopeReader(scopesContext),
@@ -222,7 +233,7 @@ namespace Rsk.IdentityServer.Migration.Tests
 
             Duende.IdentityServer.EntityFramework.Entities.ApiResource migratedEfResource;
             Duende.IdentityServer.EntityFramework.Entities.ApiScope migratedScope;
-            using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
+            await using (var context = new ConfigurationDbContext(dbContextOptions))
             {
                 migratedEfResource = context.ApiResources
                     .Include(x => x.Scopes)
@@ -279,8 +290,13 @@ namespace Rsk.IdentityServer.Migration.Tests
                 .UseInMemoryDatabase(nameof(WhenIdentityScopeMigrated_ExpectCorrectValues))
                 .Options;
 
-            var ids4Context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions());
-
+            var ids4Context = new ConfigurationDbContext(dbContextOptions)
+            {
+                StoreOptions = new ConfigurationStoreOptions
+                {
+                    DefaultSchema = "IdSrv"
+                }
+            };
             var sut = new Migrator(
                 new EntityFrameworkClientReader(clientsContext),
                 new EntityFrameworkScopeReader(scopesContext),
@@ -291,7 +307,7 @@ namespace Rsk.IdentityServer.Migration.Tests
             await sut.Migrate();
 
             Duende.IdentityServer.EntityFramework.Entities.IdentityResource migratedEfResource;
-            using (var context = new ConfigurationDbContext(dbContextOptions, new ConfigurationStoreOptions()))
+            await using (var context = new ConfigurationDbContext(dbContextOptions))
             {
                 migratedEfResource = context.IdentityResources
                     .Include(x => x.UserClaims)
